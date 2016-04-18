@@ -1,0 +1,1 @@
+Some wiki engines are open source, whereas others are proprietary. 

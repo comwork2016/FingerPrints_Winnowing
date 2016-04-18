@@ -1,0 +1,5 @@
+测试中文，文档的读入；
+2016年4月6日；
+ABC EDF；
+abc edf；
+在C++标准里定义了两个字符串string和wstring；
