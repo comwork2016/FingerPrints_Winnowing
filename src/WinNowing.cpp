@@ -9,11 +9,6 @@ WinNowing::WinNowing()
 std::vector<KGramHash> CalcRabinHash(std::vector<SplitedHits> vec_SplitedHits)
 {
     std::vector<KGramHash> vec_KGramHash;
-    SIMHASH_TYPE n_mul=1; //the value of n_mul would be "pow(BASE, K) % MODNUM"
-    for(int i = 0; i < KGRAM; i++)
-    {
-        n_mul = ( n_mul * BASE ) % MODNUM;
-    }
     //初始化kgramhash
     int n_kcount = 0;
     KGramHash kgram_Now;
@@ -27,31 +22,42 @@ std::vector<KGramHash> CalcRabinHash(std::vector<SplitedHits> vec_SplitedHits)
     SIMHASH_TYPE l_SimHash = 0;
     int n_firstKGramIndex = 0 ;
     //遍历分词列表
- //   std::wcout<<"**************************"<<std::endl;
     for(int i=0; i<vec_SplitedHits.size(); i++)
     {
         SplitedHits hits = vec_SplitedHits[i];//词语单位
-        //H(c 1 . . . ck ) = c1 ∗ b^k−1 + c2 ∗ b^k−2 ∗ . . . + ck−1 ∗ b + ck
+        //H(c 1 . . . ck ) = c1 ∗ b^k + c2 ∗ b^k−1 ∗ . . . + ck−1 ∗ b^2 + ck*b
         if(n_kcount<KGRAM)
         {
             kgram_Now.vec_splitedHits.push_back(hits);
             kgram_Last.vec_splitedHits.push_back(hits);
-            kgram_Now.hashValue = ( BASE * kgram_Now.hashValue + hits.hashValue*BASE) % MODNUM;
+            /*
+            (a + b)%M = (a%M + b%M)%M
+            (ab)%M = [(a%M)(b%M)]%M
+            */
+            kgram_Now.hashValue = ( kgram_Now.hashValue * BASE + hits.hashValue * BASE) % MODNUM;
             n_kcount++;
         }
         else
         {
-            // save k-gram unit and hash value
+            // 保存一个kgram的信息
             vec_KGramHash.push_back(kgram_Now);
+            // 更新kgram_now and kgram_now，即删除kgram_now中的第一个元素，添加下一个元素，同时，第一个分词索引下移
             n_firstKGramIndex++;
-            // update kstr_now, kstr_now and hv_now
             std::vector<SplitedHits>::iterator it_first = kgram_Now.vec_splitedHits.begin();
             kgram_Now.vec_splitedHits.erase(it_first);
             kgram_Now.vec_splitedHits.push_back(hits);
             kgram_Now.n_splitedHitsIndex = n_firstKGramIndex;
-            kgram_Now.hashValue = ((kgram_Now.hashValue - kgram_Last.vec_splitedHits[0].hashValue*n_mul + hits.hashValue)*BASE)%MODNUM;
+            //为防止数据溢出，需要对运算进行等价处理
+            SIMHASH_TYPE l_LastCharWeight=kgram_Last.vec_splitedHits[0].hashValue;
+            //the value of l_LastCharWeight would be "kgram_Last.vec_splitedHits[0].hashValue * pow(BASE, K) % MODNUM"
+            for(int i = 0; i < KGRAM; i++)
+            {
+                l_LastCharWeight = ( l_LastCharWeight * BASE ) % MODNUM;
+            }
+            kgram_Now.hashValue = ((kgram_Now.hashValue - l_LastCharWeight + hits.hashValue)*BASE)%MODNUM;
             if(kgram_Now.hashValue<0)
             {
+//                std::wcout<<L"hash lt zero:"<<kgram_Now.hashValue<<std::endl;
                 kgram_Now.hashValue+=MODNUM;
             }
             kgram_Last = kgram_Now;

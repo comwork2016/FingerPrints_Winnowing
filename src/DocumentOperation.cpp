@@ -18,11 +18,11 @@ int DocumentOperation::AddDocument(std::string str_DocPath)
         //挑选指纹信息并存入
         doc->PickFingerPrints();
         docDao->Insert(doc);
-        std::cout<<doc->GetstrDocName() <<" inserted"<<std::endl;
+        std::wcout<<SplitContents::ConvertCharArraytoWString(doc->GetstrDocName().c_str()) <<L" inserted"<<std::endl;
     }
     else
     {
-        std::cout<<"xxxxxx "<<doc->GetstrDocName() <<" is similar to "<<str_SimilarDoc<<std::endl;
+        std::wcout<<L"xxxxxx "<<SplitContents::ConvertCharArraytoWString(doc->GetstrDocName().c_str()) <<L" is similar to "<<SplitContents::ConvertCharArraytoWString(str_SimilarDoc.c_str())<<std::endl;
     }
     return 0;
 }
@@ -72,7 +72,7 @@ int DocumentOperation::SearchLeak(std::string str_DocPath)
         for(int i=0; i<vec_SimilarDocument.size(); i++)
         {
             FingerPrintsSimilarDocument similarDoc = vec_SimilarDocument[i];
-            std::wcout<<L"similarity between "<<SplitContents::ConvertCharArraytoWString(doc->GetstrDocPath().c_str())<<L" and "<<SplitContents::ConvertCharArraytoWString(similarDoc.str_DBDoc.c_str())<<L" is "<<similarDoc.f_similarity<<std::endl;
+            std::wcout<<L"-------------------similarity between "<<SplitContents::ConvertCharArraytoWString(doc->GetstrDocPath().c_str())<<L" and "<<SplitContents::ConvertCharArraytoWString(similarDoc.str_DBDoc.c_str())<<L" is "<<similarDoc.f_similarity<<std::endl;
             int n_SameSize = similarDoc.vec_SearchDocSimilarKGramHash.size();
             for(int j=0; j<n_SameSize; j++)
             {

@@ -14,6 +14,7 @@ int DocumentDao::Insert(Document* doc)
     mongo::BSONObjBuilder b;
     b.append("filename",doc->GetstrDocName());
     b.append("filepath", doc->GetstrDocPath());
+    b.append("filelength",static_cast<int>(SplitContents::ConvertCharArraytoWString(doc->GetstrContents().c_str()).length()));
     b.appendNumber("simhash",static_cast<long long>(doc->GetlSimHash()));
     b.appendNumber("fingersize",doc->GetFingerPrints().size());
     std::vector<KGramHash> vec_FingerPrints = doc->GetFingerPrints();
@@ -70,6 +71,14 @@ std::string DocumentDao::QuerySIMSimilarity(Document* doc)
         SIMHASH_TYPE l_SimHash = p.getField("simhash").numberLong();
         if(IsSimHashSimilar(doc->GetlSimHash(),l_SimHash))
         {
+            //两个近似网页的文章长度差距应在20%以内
+            int n_DBFileLength = p.getIntField("filelength");
+            int n_DocFileLength = SplitContents::ConvertCharArraytoWString(doc->GetstrContents().c_str()).length();
+            float f_LengthSim = (float)(n_DBFileLength-n_DocFileLength)/(n_DocFileLength>n_DBFileLength?n_DocFileLength:n_DBFileLength);
+            if( f_LengthSim >= 0.2)
+            {
+                return "";
+            }
             std::string str_SimilarDoc = std::string(p.getStringField("filename"));
             return str_SimilarDoc;
         }

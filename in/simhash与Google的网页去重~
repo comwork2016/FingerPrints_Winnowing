@@ -1,0 +1,33 @@
+前几天去吃葫芦头的路上，大飞哥给详细的讲解了他在比较文本相似度实验时对Google的simhash方法高效的惊叹，回来特意去找了原文去拜读。
+Simhash
+传统IR领域内文本相似度比较所采用的经典方法是文本相似度的向量夹角余弦，其主要思想是根据一个文章中出现词的词频构成一个向量，然后计算两篇文章对应向量的向量夹角。但由于有可能一个文章的特征向量词特别多导致整个向量维度很高，使得计算的代价太大，对于Google这种处理万亿级别的网页的搜索引擎而言是不可接受的，simhash算法的主要思想是降维，将高维的特征向量映射成一个f-bit的指纹(fingerprint)，通过比较两篇文章的f-bit指纹的Hamming Distance来确定文章是否重复或者高度近似。
+simhash算法很精巧，但却十分容易理解和实现，具体的simhash过程如下：
+1. 首先基于传统的IR方法，将文章转换为一组加权的特征值构成的向量。
+2.初始化一个f维的向量V，其中每一个元素初始值为0。
+3.对于文章的特征向量集中的每一个特征，做如下计算：
+利用传统的hash算法映射到一个f-bit的签名。对于这个f- bit的签名，如果签名的第i位上为1，则对向量V中第i维加上这个特征的权值，否则对向量的第i维减去该特征的权值。
+4.对整个特征向量集合迭代上述运算后，根据V中每一维向量的符号来确定生成的f-bit指纹的值，如果V的第i维为正数，则生成f-bit指纹的第i维为1，否则为0。
+simhash
+simhash和普通hash最大的不同在于传统的hash函数虽然也可以用于映射来比较文本的重复，但是对于可能差距只有一个字节的文档也会映射成两个完全不同的哈希结果，而simhash对相似的文本的哈希映射结果也相似。Google的论文中取了f=64，即将整个网页的加权特征集合映射到一个64-bit的fingerprint上。
+比起simhash，整片文章中Google所采用的查找与给定f-bit的fingerprint的海明距离(Hamming Distance)小于k的算法相对还稍微难理解点。
+fingerprint的Hamming Distance
+问题：一个80亿的64-bit指纹组成的集合Q，对于一个给定64-bit的指纹F，如何在a few millionseconds中找到Q中和f至多只有k(k=3)位差别的指纹。
+思想：1. 对于一个具有2^d个记录的集合，只需要考虑d-bit hash。2. 选取一个d’使得|d’-d|十分小，因此如果两fingerprint在d’-bits上都相同，那么在d-bits也很可能相同。然后在这些d-bit match的结果中寻找整个f-bit的Hamming Distance小于k的fingerprint。 简单的说，就是利用fingerprint少量特征位数比较从而首先缩小范围，然后再去确定是否差异小于k个bit。
+算法：
+1. 首先对于集合Q构建多个表T1，T2…Tt，每一个表都是采用对应的置换函数π(i)将64-bit的fingerprint中的某p(i)位序列置换换到整个序列的最前面。即每个表存储都是整个Q的fingerprint的复制置换。
+2.对于给定的F，在每个Ti中进行匹配，寻找所有前pi位与F经过π(i)置换后的前pi位相同的fingerprint。
+3.对于所有在上一步中匹配到的置换后的fingerprint，计算其是否与π(i)(F)至多有k-bit不同。
+算法的重点在于对于集合Q的分表以及每个表所对应的置换函数，假设对于64-bit的fingerprint，k=3，存储16个table，划分参考下图:
+HammingTable
+将64-bit按照16位划分为4个区间，每个区间剩余的48-bit再按照每个12-bit划分为4个区间，因此总共16个table并行查找，即使三个不同的k-bit落在A、B、C、D中三个不同的区块，此划分方法也不会导致遗漏。
+以上方法是对于online的query，即一个给定的F在集合中查找相似的fingerprint。如果爬虫每天爬取了100w个网页，快速的查找这些新抓取的网页是否在原集合中有Near-duplication，对于这种batch-query的情况，Map-Reduce就发挥它的威力了。
+batch-query
+不同的是，在batch-query的处理中，是对待查集合B(1M个fingerprint)进行复制置换构建Table而非8B的目标集合，而在每一个chunkserver上对Fi(F为整个8B的fingerprint)在整个Table(B)中进行探测，每一个chunkserver上的的该Map过程输出该Fi中与整个B的near-duplicates，Reduces过程则将所有的结果收集、去重、然后输出为一个sorted file。
+
+Haffman编码压缩
+上述的查询过程，特别是针对online-version的算法，可以看出需要对8B的fingerprint进行多表复制和构建，其占据的容量是非常大的，不过由于构建的每一个置换Table都是sorted的，因此可以利用每一个fingerprint与其前一个的开始不同的bit-position h(h∈[0,f-1]) 来进行数据压缩，即如果前一个编码是11011011，而自身是11011001，则后一个可以编码为(6)1，即h=6，其中6表示从第6位(从0开始编号)开始和上一个fingerprint不相同(上一个为1，这个必然为0)，然后再保存不相同位置右侧的编码，依次生成整个table。
+Google首先计算整个排序的fingerprint表中h的分布情况，即不同的h出现次数，依据此对[0,f-1]上出现的h建立Haffman code，再根据上述规则生成table（例如上面的6就表示成对应的Haffman code）。其中table分为多个block，每一个block中的第一个fingerprint保存原数据，后面的依次按照编码生成。
+将每一个block中所对应的最后一个fingerprint保存在内存中，因此在比对的时候就可以直接根据内存中的fingerprint来确定是哪一个block需要被decompress进行比较。
+8B个64-bit的fingerprint原占据空间大约为64GB，利用上述Haffman code压缩后几乎会减少一般，而内存中又只对每一个block保存了一个fingerprint。
+ 
+每次看Google的论文都会让人眼前一亮，而且与很多(特别是国内)的论文是对未来进行设想不同，Google的东西都是已经运行了2，3年了再到WWW，OSDI这种顶级会议上灌个水。再次各种羡慕能去这个Dream Company工作的人，你们懂得。

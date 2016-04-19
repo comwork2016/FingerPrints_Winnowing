@@ -13,6 +13,9 @@
 
 #include "Constants.h"
 
+// to delete
+#include <string.h>
+
 class Document
 {
     public:

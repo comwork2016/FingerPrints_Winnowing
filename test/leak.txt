@@ -1,1 +1,7 @@
-Some wiki engines are open source, whereas others are proprietary. 
+两篇文本相似度普遍的定义是比较向量化之后两个词袋中词的交集程度，有cosine,jaccard等等
+如果直接使用这种计算方式，时间空间复杂度都太高，因此有了simhash这种降维技术，
+但是如何从传统的向量相似度能用simhash来近似，论文没提，应该是有很长一段推导要走的。
+Simhash算法
+一篇文本提取出内容以后，经过基本的预处理，比如去除停词，词根还原，甚至chunking，最后可以得到一个向量。
+对每一个term进行hash算法转换，得到长度f位的hash码，每一位上1-0值进行正负权值转换，例如f1位是1时，权值设为 +weight, fk位为0时，权值设为-weight。
+讲文本中所有的term转换出的weight向量按f对应位累加最后得到一个f位的权值数组，位为正的置1，位为负的置0，那么文本就转变成一个f位的新1-0数组，也就是一个新的hash码。

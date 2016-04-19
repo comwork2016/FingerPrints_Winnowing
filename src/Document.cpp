@@ -15,19 +15,31 @@ Document::Document(std::string str_DocPath)
     }
     //对文档内容进行分词处理
     this->m_vecSplitedHits = SplitContents::SplitContentsToVector(this->m_strContents);
-/*  遍历输出分词结果
-    std::wcout<<this->m_vecSplitedHits.size()<<std::endl;
+    /*  遍历输出分词结果
+        std::wcout<<this->m_vecSplitedHits.size()<<std::endl;
+        for(std::vector<SplitedHits>::iterator it=this->m_vecSplitedHits.begin();it!=this->m_vecSplitedHits.end();it++)
+        {
+            SplitedHits sh_hits = *it;
+            std::wcout<<sh_hits.words<<"["<<sh_hits.offset<<","<<sh_hits.length<<","<<sh_hits.hashValue<<"]"<<std::endl;
+        }
+    */
+    /*输出分词结果到文件中
+    std::wofstream wofs_Doc;
+    std::string out_Doc = "./tmp/分词_"+this->m_strDocName;
+    wofs_Doc.open(out_Doc.c_str(),std::ios::out);
     for(std::vector<SplitedHits>::iterator it=this->m_vecSplitedHits.begin();it!=this->m_vecSplitedHits.end();it++)
-    {
-        SplitedHits sh_hits = *it;
-        std::wcout<<sh_hits.words<<"["<<sh_hits.offset<<","<<sh_hits.length<<","<<sh_hits.hashValue<<"]"<<std::endl;
-    }
-*/
+        {
+            SplitedHits sh_hits = *it;
+            wofs_Doc<<sh_hits.words<<"["<<sh_hits.offset<<":::"<<sh_hits.length<<":::"<<sh_hits.hashValue<<"]"<<std::endl;
+
+        }
+    wofs_Doc.close();
+    */
     //利用分词结果 计算文档的SimHash值
     this->m_lSimHash = SimHash::CalcSimHash(this->m_vecSplitedHits);
-/*输出文档的simhash值
-    std::cout<<this->m_strDocName<<"---"<<this->m_lSimHash<<std::endl;
-*/
+    /*输出文档的simhash值
+        std::cout<<this->m_strDocName<<"---"<<this->m_lSimHash<<std::endl;
+    */
 }
 
 //读取文件内容
@@ -51,12 +63,37 @@ void Document::PickFingerPrints()
 {
     this->m_FingerPrints = WinNowing::PickFingerPrints(this->m_vecSplitedHits);
     /*输出选出的指纹信息
-    std::wcout<<"**************************"<<this->m_FingerPrints.size()<<std::endl;
     for(int i=0;i<this->m_FingerPrints.size();i++)
     {
-        KGRAMHASH kgramHash = this->m_FingerPrints[i];
-        std::wcout<<kgramHash.vec_splitedHits[0].offset<<":::"<<kgramHash.hashValue<<std::endl;
-    }*/
+        KGramHash kgram_SearchDoc = this->m_FingerPrints[i];
+                SplitedHits hits_SearchDocFirst = this->m_vecSplitedHits[kgram_SearchDoc.n_splitedHitsIndex];
+                SplitedHits hits_SearchDocLast = this->m_vecSplitedHits[kgram_SearchDoc.n_splitedHitsIndex + KGRAM-1];
+                std::wcout<<L"["<<hits_SearchDocFirst.offset<<","<<hits_SearchDocLast.offset + hits_SearchDocLast.length<<L"]";
+                int n_OriginLength = hits_SearchDocLast.offset + hits_SearchDocLast.length - hits_SearchDocFirst.offset;
+                const char* pch_OriginWord = this->m_strContents.substr(hits_SearchDocFirst.offset, n_OriginLength).c_str();
+                std::wcout<<SplitContents::ConvertCharArraytoWString(pch_OriginWord)<<std::endl;
+    }
+    std::wcout<<std::endl<<std::endl<<std::endl;*/
+    /*输出文件指纹结果到文件中
+    std::wofstream wofs_Doc;
+    std::string out_Doc = "./tmp/指纹_"+this->m_strDocName;
+    wofs_Doc.open(out_Doc.c_str(),std::ios::out);
+
+    for(int i=0; i<this->m_FingerPrints.size(); i++)
+    {
+        KGramHash kgram_SearchDoc = this->m_FingerPrints[i];
+        SplitedHits hits_SearchDocFirst = this->m_vecSplitedHits[kgram_SearchDoc.n_splitedHitsIndex];
+        SplitedHits hits_SearchDocLast = this->m_vecSplitedHits[kgram_SearchDoc.n_splitedHitsIndex + KGRAM-1];
+        wofs_Doc<<L"["<<kgram_SearchDoc.hashValue<<":"<<hits_SearchDocFirst.offset<<":"<<hits_SearchDocLast.offset + hits_SearchDocLast.length - hits_SearchDocFirst.offset<<L"]";
+        for(int k=kgram_SearchDoc.n_splitedHitsIndex; k<kgram_SearchDoc.n_splitedHitsIndex+KGRAM; k++)
+        {
+            SplitedHits hits_SearchDoc = this->m_vecSplitedHits[k]; //待比对文档中的分词信息
+            wofs_Doc<<hits_SearchDoc.words<<L" ";
+        }
+    wofs_Doc<<std::endl;
+    }
+    wofs_Doc.close();
+    */
 }
 
 Document::~Document()
