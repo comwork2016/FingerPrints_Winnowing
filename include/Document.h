@@ -19,15 +19,17 @@
 class Document
 {
     public:
-        Document(std::string str_DocPath);
+        Document(const std::string& str_DocPath);
         virtual ~Document();
-        std::string GetstrDocPath() { return m_strDocPath; }
-        std::string GetstrDocName() { return m_strDocName; }
-        std::string GetstrContents() { return m_strContents; }
-        std::vector<SplitedHits> GetvecSplitedHits() { return m_vecSplitedHits; }
-        SIMHASH_TYPE GetlSimHash() { return m_lSimHash; }
-        std::vector<KGramHash> GetFingerPrints() { return m_FingerPrints; }
+        std::string GetstrDocPath() const { return m_strDocPath; }
+        std::string GetstrDocName() const { return m_strDocName; }
+        std::string GetstrContents() const { return m_strContents; }
+        std::vector<SplitedHits> GetvecSplitedHits() const { return m_vecSplitedHits; }
+        SIMHASH_TYPE GetlSimHash() const { return m_lSimHash; }
+        std::vector<KGramHash> GetFingerPrints() const { return m_FingerPrints; }
         void PickFingerPrints();
+        void SplitContentsToWords();
+        void CalcSimHash();
     protected:
         int ReadDocument();
 

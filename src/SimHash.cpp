@@ -6,7 +6,7 @@ SimHash::SimHash()
 }
 
 //计算文档分词后的simhash值
-SIMHASH_TYPE SimHash::CalcSimHash(std::vector<SplitedHits> vec_SplitedHits)
+SIMHASH_TYPE SimHash::CalcSimHash(const std::vector<SplitedHits>& vec_SplitedHits)
 {
     //初始化表示simhash每一位的权重数组
     short v[SIMHASHBITS];
@@ -15,11 +15,11 @@ SIMHASH_TYPE SimHash::CalcSimHash(std::vector<SplitedHits> vec_SplitedHits)
         v[i] = 0;
     }
     //遍历分词列表
-    for(std::vector<SplitedHits>::iterator it=vec_SplitedHits.begin();it!=vec_SplitedHits.end();it++)
+    for(int i=0;i<vec_SplitedHits.size();i++)
     {
-        SplitedHits sh_hits = *it;
+        SplitedHits sh_hits = vec_SplitedHits[i];
 //        std::wcout<<sh_hits.words<<"["<<sh_hits.offset<<","<<sh_hits.length<<","<<sh_hits.hashValue<<"]"<<std::endl;
-        SIMHASH_TYPE l_Hash = it->hashValue;
+        SIMHASH_TYPE l_Hash = sh_hits.hashValue;
         //计算对hash值的每一位，如果为1，则权重数组的相应位+1，为0则-1
         for (int j = 0; j < SIMHASHBITS; j++)
         {

@@ -5,9 +5,12 @@ SplitContents::SplitContents()
 }
 
 //将字符串转换为wstring类型
-std::wstring SplitContents::ConvertCharArraytoWString(const char* pch)
+std::wstring SplitContents::ConvertCharArraytoWString(const char*& pch, int length)
 {
-    int length = strlen(pch);
+    if(length==0)
+    {
+      length = strlen(pch);
+    }
     wchar_t* wc = new wchar_t[length+1];
     mbstowcs(wc, pch, length+1);
     std::wstring wstr = wc;
@@ -31,9 +34,9 @@ SIMHASH_TYPE CalcWstringHash(std::wstring str)
 }
 
 //将文本分词，存入列表中返回
-std::vector<SplitedHits> SplitContents::SplitContentsToVector(std::string str_contents)
+std::vector<SplitedHits> SplitContents::SplitContentsToWords(const std::string& str_contents)
 {
-    std::vector<SplitedHits> list_SplitedHits;
+    std::vector<SplitedHits> vec_SplitedHits;
     int i;
     friso_t friso; // friso实例
     friso_config_t config; //friso配置类
@@ -50,7 +53,7 @@ std::vector<SplitedHits> SplitContents::SplitContentsToVector(std::string str_co
         std::cout<<"fail to initialize friso and config."<<std::endl;
         friso_free_config(config);
         friso_free(friso);
-        return list_SplitedHits;
+        return vec_SplitedHits;
     }
     // 设置任务信息
     task = friso_new_task();
@@ -59,7 +62,8 @@ std::vector<SplitedHits> SplitContents::SplitContentsToVector(std::string str_co
     //循环读取分词内容
     while ( ( friso_next( friso, config, task ) ) != NULL )
     {
-        std::wstring wstr_words = ConvertCharArraytoWString(task->hits->word);
+        const char* pch_HitsWord = task->hits->word;
+        std::wstring wstr_words = ConvertCharArraytoWString(pch_HitsWord);
         int n_offset = task->hits->offset;
         int n_length = task->hits->length;
         //计算分词片段的hash值
@@ -71,7 +75,7 @@ std::vector<SplitedHits> SplitContents::SplitContentsToVector(std::string str_co
             n_length,
             hashValue
         };
-        list_SplitedHits.push_back(sh_hits);
+        vec_SplitedHits.push_back(sh_hits);
 
 //        std::wcout<<sh_hits.words<<"["<<sh_hits.offset<<","<<sh_hits.length<<","<<sh_hits.hashValue<<"]"<<std::endl;
 
@@ -80,7 +84,7 @@ std::vector<SplitedHits> SplitContents::SplitContentsToVector(std::string str_co
     friso_free_task( task );
     friso_free_config(config);
     friso_free(friso);
-    return list_SplitedHits;
+    return vec_SplitedHits;
 }
 
 SplitContents::~SplitContents()

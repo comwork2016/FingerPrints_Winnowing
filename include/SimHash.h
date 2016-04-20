@@ -12,8 +12,7 @@ class SimHash
     public:
         SimHash();
         virtual ~SimHash();
-
-        static SIMHASH_TYPE CalcSimHash(std::vector<SplitedHits> vec_SplitedHits);
+        static SIMHASH_TYPE CalcSimHash(const std::vector<SplitedHits>& vec_SplitedHits);
     protected:
     private:
 };

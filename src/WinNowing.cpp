@@ -6,23 +6,21 @@ WinNowing::WinNowing()
     //ctor
 }
 
-std::vector<KGramHash> CalcRabinHash(std::vector<SplitedHits> vec_SplitedHits)
+std::vector<KGramHash> CalcRabinHash(const std::vector<SplitedHits>& vec_SplitedHits)
 {
     std::vector<KGramHash> vec_KGramHash;
     //初始化kgramhash
     int n_kcount = 0;
     KGramHash kgram_Now;
     kgram_Now.hashValue = 0;
-    kgram_Now.n_splitedHitsIndex = 0;
     kgram_Now.vec_splitedHits.clear();
     KGramHash kgram_Last;
     kgram_Last.hashValue = 0;
-    kgram_Last.n_splitedHitsIndex = 0;
     kgram_Last.vec_splitedHits.clear();
     SIMHASH_TYPE l_SimHash = 0;
-    int n_firstKGramIndex = 0 ;
     //遍历分词列表
-    for(int i=0; i<vec_SplitedHits.size(); i++)
+    int i=0;
+    for(i=0; i<vec_SplitedHits.size(); i++)
     {
         SplitedHits hits = vec_SplitedHits[i];//词语单位
         //H(c 1 . . . ck ) = c1 ∗ b^k + c2 ∗ b^k−1 ∗ . . . + ck−1 ∗ b^2 + ck*b
@@ -39,14 +37,14 @@ std::vector<KGramHash> CalcRabinHash(std::vector<SplitedHits> vec_SplitedHits)
         }
         else
         {
-            // 保存一个kgram的信息
+            // 计算偏移信息并保存kgram的信息
+            kgram_Now.offset_begin = kgram_Now.vec_splitedHits[0].offset;
+            kgram_Now.offset_end = kgram_Now.vec_splitedHits[KGRAM-1].offset + kgram_Now.vec_splitedHits[KGRAM-1].length+1;
             vec_KGramHash.push_back(kgram_Now);
             // 更新kgram_now and kgram_now，即删除kgram_now中的第一个元素，添加下一个元素，同时，第一个分词索引下移
-            n_firstKGramIndex++;
             std::vector<SplitedHits>::iterator it_first = kgram_Now.vec_splitedHits.begin();
             kgram_Now.vec_splitedHits.erase(it_first);
             kgram_Now.vec_splitedHits.push_back(hits);
-            kgram_Now.n_splitedHitsIndex = n_firstKGramIndex;
             //为防止数据溢出，需要对运算进行等价处理
             SIMHASH_TYPE l_LastCharWeight=kgram_Last.vec_splitedHits[0].hashValue;
             //the value of l_LastCharWeight would be "kgram_Last.vec_splitedHits[0].hashValue * pow(BASE, K) % MODNUM"
@@ -57,24 +55,30 @@ std::vector<KGramHash> CalcRabinHash(std::vector<SplitedHits> vec_SplitedHits)
             kgram_Now.hashValue = ((kgram_Now.hashValue - l_LastCharWeight + hits.hashValue)*BASE)%MODNUM;
             if(kgram_Now.hashValue<0)
             {
-//                std::wcout<<L"hash lt zero:"<<kgram_Now.hashValue<<std::endl;
                 kgram_Now.hashValue+=MODNUM;
             }
             kgram_Last = kgram_Now;
         }
+    }
+    if(n_kcount<KGRAM)//分词个数小于K值，则作为一个KGRAM
+    {
+        kgram_Now.offset_begin = kgram_Now.vec_splitedHits[0].offset;
+        kgram_Now.offset_end = kgram_Now.vec_splitedHits[n_kcount-1].offset + kgram_Now.vec_splitedHits[n_kcount-1].length+1;
+        //SplitedHits hits  = kgram_Now.vec_splitedHits[n_kcount-1];
+        //std::wcout<<hits.words<<":["<<hits.offset<<";"<<hits.length<<"]"<<std::endl;
     }
     vec_KGramHash.push_back(kgram_Now);
     return vec_KGramHash;
 }
 
 //利用WinNowing算法挑选文档指纹
-std::vector<KGramHash>  WinNowing::PickFingerPrints(std::vector<SplitedHits> vec_SplitedHits)
+std::vector<KGramHash>  WinNowing::PickFingerPrints(const std::vector<SplitedHits>& vec_SplitedHits)
 {
     std::vector<KGramHash> vec_FingerPrints;
     //以词组为单位进行k-gram组合，即一个组合种有k和词
     std::vector<KGramHash> vec_KGramHash = CalcRabinHash(vec_SplitedHits);
 
-    /*遍历k-gram词组的hash值
+    /*遍历k-gram词组的hash值和文本范围
     std::wcout<<vec_KGramHash.size()<<std::endl;
     for(int i=0;i<vec_KGramHash.size();i++)
     {
@@ -82,14 +86,12 @@ std::vector<KGramHash>  WinNowing::PickFingerPrints(std::vector<SplitedHits> vec
         {
             std::wcout<<vec_KGramHash[i].vec_splitedHits[j].words<<" ";
         }
-        std::wcout<<":::"<<vec_KGramHash[i].hashValue<<std::endl;
-    }
-    */
+        std::wcout<<"["<<vec_KGramHash[i].offset_begin<<","<<vec_KGramHash[i].offset_end<<"]:::"<<vec_KGramHash[i].hashValue<<std::endl;
+    }*/
 
     KGramHash kgramhash_Window[WINDOWSIZE];//存放哈希值的窗口，窗口是循环使用的
     int n_MIN=0;     //记录当前最小值在窗口中的位置
     int n_POS=n_MIN; //记录最小值在原序列中出现的位置
-
     // init pn_Window array
     int i=0;
     for(i=0; i<WINDOWSIZE && i<vec_KGramHash.size(); i++)
@@ -104,6 +106,7 @@ std::vector<KGramHash>  WinNowing::PickFingerPrints(std::vector<SplitedHits> vec
     }
     // add first min hash to vector
     KGramHash kgramHash =  kgramhash_Window[n_MIN];
+    //std::wcout<<"["<<kgramHash.offset_begin<<","<<kgramHash.offset_end<<"]:::"<<kgramHash.hashValue<<std::endl;
     vec_FingerPrints.push_back(kgramHash);
 
     if(i>=vec_KGramHash.size())      //当窗口值大于指纹总数时执行
@@ -129,6 +132,7 @@ std::vector<KGramHash>  WinNowing::PickFingerPrints(std::vector<SplitedHits> vec
                 }
             }
             KGramHash kgramHash =  kgramhash_Window[n_MIN];
+            //std::wcout<<"["<<kgramHash.offset_begin<<","<<kgramHash.offset_end<<"]:::"<<kgramHash.hashValue<<std::endl;
             vec_FingerPrints.push_back(kgramHash);
         }
         else //min!=r就说明当前最小的哈希值依然包含在窗口中
@@ -138,6 +142,7 @@ std::vector<KGramHash>  WinNowing::PickFingerPrints(std::vector<SplitedHits> vec
                 n_POS+=(n_RightIndex+WINDOWSIZE-n_MIN)%WINDOWSIZE;
                 n_MIN=n_RightIndex;
                 KGramHash kgramHash =  kgramhash_Window[n_MIN];
+                //std::wcout<<"["<<kgramHash.offset_begin<<","<<kgramHash.offset_end<<"]:::"<<kgramHash.hashValue<<std::endl;
                 vec_FingerPrints.push_back(kgramHash);
             }
         }

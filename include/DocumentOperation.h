@@ -16,9 +16,9 @@ class DocumentOperation
     public:
         DocumentOperation();
         virtual ~DocumentOperation();
-        static int AddDocument(std::string str_DocPath);
-        static int AddDirectoryDocuments(std::string str_InputDir);
-        static int SearchLeak(std::string str_DocPath);
+        static int AddDocument(const std::string& str_DocPath);
+        static int AddDirectoryDocuments(const std::string& str_InputDir);
+        static int SearchLeak(const std::string& str_DocPath);
     protected:
     private:
 };

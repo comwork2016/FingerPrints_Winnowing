@@ -14,7 +14,7 @@ class WinNowing
     public:
         WinNowing();
         virtual ~WinNowing();
-        static std::vector<KGramHash> PickFingerPrints(std::vector<SplitedHits> vec_SplitedHits);
+        static std::vector<KGramHash> PickFingerPrints(const std::vector<SplitedHits>& vec_SplitedHits);
     protected:
     private:
 };

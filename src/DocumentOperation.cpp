@@ -6,29 +6,34 @@ DocumentOperation::DocumentOperation()
 }
 
 //向数据库中添加一个文档信息
-int DocumentOperation::AddDocument(std::string str_DocPath)
+int DocumentOperation::AddDocument(const std::string& str_DocPath)
 {
+    //通过文件路径读取文件内容，并进行分词处理，计算simhash值。
     Document* doc = new Document(str_DocPath);
-    //通过文件路径读取文件内容，并进行分词处理。
+    doc->SplitContentsToWords();
+    doc->CalcSimHash();
     DocumentDao* docDao = new DocumentDao();
     //与数据库中的文件SimHash比较,如果不相同,计算文档指纹并存入数据库中
-    std::string str_SimilarDoc = docDao->QuerySIMSimilarity(doc);
+    const std::string str_SimilarDoc = docDao->QuerySIMSimilarity(doc);
     if(str_SimilarDoc=="")
     {
         //挑选指纹信息并存入
         doc->PickFingerPrints();
         docDao->Insert(doc);
-        std::wcout<<SplitContents::ConvertCharArraytoWString(doc->GetstrDocName().c_str()) <<L" inserted"<<std::endl;
+        const char* pch_DocName = doc->GetstrDocName().c_str();
+        std::wcout<<SplitContents::ConvertCharArraytoWString(pch_DocName) <<L" inserted"<<std::endl;
     }
     else
     {
-        std::wcout<<L"xxxxxx "<<SplitContents::ConvertCharArraytoWString(doc->GetstrDocName().c_str()) <<L" is similar to "<<SplitContents::ConvertCharArraytoWString(str_SimilarDoc.c_str())<<std::endl;
+        const char* pch_DocName = doc->GetstrDocName().c_str();
+        const char* pch_SimDocName = str_SimilarDoc.c_str();
+        std::wcout<<L"xxxxxx "<<SplitContents::ConvertCharArraytoWString(pch_DocName) <<L" is similar to "<<SplitContents::ConvertCharArraytoWString(pch_SimDocName)<<std::endl;
     }
     return 0;
 }
 
 //将整个目录中的文件添加到数据库中
-int DocumentOperation::AddDirectoryDocuments(std::string str_InputDir)
+int DocumentOperation::AddDirectoryDocuments(const std::string& str_InputDir)
 {
     DocumentDao* daoDelete = new DocumentDao();
     daoDelete->DeleteAll();
@@ -39,7 +44,7 @@ int DocumentOperation::AddDirectoryDocuments(std::string str_InputDir)
     dir=opendir((char *)str_InputDir.c_str());
     if(!dir)
     {
-        std::cout<<"read input dir error"<<std::endl;
+        std::wcout<<L"read input dir error"<<std::endl;
         return 1;
     }
     while((ptr=readdir(dir))!=NULL)
@@ -56,9 +61,11 @@ int DocumentOperation::AddDirectoryDocuments(std::string str_InputDir)
     return 0;
 }
 
-int DocumentOperation::SearchLeak(std::string str_DocPath)
+int DocumentOperation::SearchLeak(const std::string& str_DocPath)
 {
     Document* doc = new Document(str_DocPath);
+    doc->SplitContentsToWords();
+    doc->CalcSimHash();
     DocumentDao* docDao = new DocumentDao();
     //与数据库中的文件SimHash比较,如果不相同,再通过文档指纹查询泄露信息
     std::string str_SimilarDoc = docDao->QuerySIMSimilarity(doc);
@@ -67,53 +74,41 @@ int DocumentOperation::SearchLeak(std::string str_DocPath)
         doc->PickFingerPrints();
         //查询相同的指纹
         std::vector<FingerPrintsSimilarDocument> vec_SimilarDocument = docDao->GetFingerPrintsSimilarDocument(doc);
-        std::wcout<<L"*********************************************"<<vec_SimilarDocument.size()<<std::endl;
         /*遍历输出相同指纹*/
         for(int i=0; i<vec_SimilarDocument.size(); i++)
         {
             FingerPrintsSimilarDocument similarDoc = vec_SimilarDocument[i];
-            std::wcout<<L"-------------------similarity between "<<SplitContents::ConvertCharArraytoWString(doc->GetstrDocPath().c_str())<<L" and "<<SplitContents::ConvertCharArraytoWString(similarDoc.str_DBDoc.c_str())<<L" is "<<similarDoc.f_similarity<<std::endl;
-            int n_SameSize = similarDoc.vec_SearchDocSimilarKGramHash.size();
+            const char* pch_DocPath = doc->GetstrDocPath().c_str();
+            const char* pch_SimDocPath = similarDoc.str_DBDoc.c_str();
+            std::wcout<<L"*************************************************************************************************"<<std::endl;
+            std::wcout<<L"similarity between "<<SplitContents::ConvertCharArraytoWString(pch_DocPath)<<L" and "<<SplitContents::ConvertCharArraytoWString(pch_SimDocPath)<<L" is "<<similarDoc.f_similarity<<std::endl;
+            std::wcout<<L"*************************************************************************************************"<<std::endl<<std::endl<<std::endl;
+            int n_SameSize = similarDoc.vec_SearchDocSimilarTextRange.size();
             for(int j=0; j<n_SameSize; j++)
             {
-                KGramHash kgram_SearchDoc = similarDoc.vec_SearchDocSimilarKGramHash[j]; //待比对文档中相同的hash
-                KGramHash kgram_DBDoc = similarDoc.vec_DBDocSimilarKGramHash[j]; //数据库中文档的相同的hash;
+                TextRange textrange_SearchDoc = similarDoc.vec_SearchDocSimilarTextRange[j]; //待比对文档中相同的hash
+                TextRange textrange_DBDoc = similarDoc.vec_DBDocSimilarTextRange[j]; //数据库中文档的相同的hash;
+                // 搜索文档的内容和位置
+                int n_OriginLength = textrange_SearchDoc.offset_end - textrange_SearchDoc.offset_begin;
+                const char* pch_OriginWord = doc->GetstrContents().substr(textrange_SearchDoc.offset_begin, n_OriginLength-1).c_str();
+                std::wcout<<L"["<<textrange_SearchDoc.offset_begin<<","<<textrange_SearchDoc.offset_end<<L","<<n_OriginLength<<L"]";
+                std::wcout<<SplitContents::ConvertCharArraytoWString(pch_OriginWord)<<std::endl;
+                std::wcout<<L"==============================="<<std::endl;
+                //数据库中文档的内容和位置
                 Document* docDB = new Document(similarDoc.str_DBDoc);// 数据库中的文档信息
-                /*输出分词之后的文档内容
-                                for(int k=kgram_SearchDoc.n_splitedHitsIndex; k<kgram_SearchDoc.n_splitedHitsIndex+KGRAM; k++)
-                                {
-                                    SplitedHits hits_SearchDoc = doc->GetvecSplitedHits()[k]; //待比对文档中的分词信息
-                                    std::wcout<<hits_SearchDoc.words<<L" ";
-
-                                }
-                */
-                SplitedHits hits_SearchDocFirst = doc->GetvecSplitedHits()[kgram_SearchDoc.n_splitedHitsIndex];
-                SplitedHits hits_SearchDocLast = doc->GetvecSplitedHits()[kgram_SearchDoc.n_splitedHitsIndex + KGRAM-1];
-                std::wcout<<L"["<<hits_SearchDocFirst.offset<<","<<hits_SearchDocLast.offset + hits_SearchDocLast.length<<L"]";
-                int n_OriginLength = hits_SearchDocLast.offset + hits_SearchDocLast.length - hits_SearchDocFirst.offset;
-                const char* pch_OriginWord = doc->GetstrContents().substr(hits_SearchDocFirst.offset, n_OriginLength).c_str();
-                std::wcout<<SplitContents::ConvertCharArraytoWString(pch_OriginWord);
-                std::wcout<<L"------------";
-                /*输出分词之后的文档内容
-                               for(int k=kgram_DBDoc.n_splitedHitsIndex; k<kgram_DBDoc.n_splitedHitsIndex+KGRAM; k++)
-                               {
-                                   SplitedHits hits_DBDoc = docDB->GetvecSplitedHits()[k]; //数据库中文档中的分词信息
-                                   std::wcout<<hits_DBDoc.words<<L" ";
-                               }
-                 */
-                SplitedHits hits_DBDocFirst = docDB->GetvecSplitedHits()[kgram_DBDoc.n_splitedHitsIndex];
-                SplitedHits hits_DBDocLast = docDB->GetvecSplitedHits()[kgram_DBDoc.n_splitedHitsIndex + KGRAM-1];
-                std::wcout<<L"["<<hits_DBDocFirst.offset<<","<<hits_DBDocLast.offset+hits_DBDocLast.length<<L"]";
-                int n_DBLength = hits_DBDocLast.offset + hits_DBDocLast.length - hits_DBDocFirst.offset;
-                const char* pch_DBWord = docDB->GetstrContents().substr(hits_DBDocFirst.offset, n_DBLength).c_str();
+                int n_DBLength = textrange_DBDoc.offset_end - textrange_DBDoc.offset_begin;
+                const char* pch_DBWord = docDB->GetstrContents().substr(textrange_DBDoc.offset_begin, n_DBLength-1).c_str();
+                std::wcout<<L"["<<textrange_DBDoc.offset_begin<<","<<textrange_DBDoc.offset_end<<L","<<n_DBLength<<L"]";
                 std::wcout<<SplitContents::ConvertCharArraytoWString(pch_DBWord);
-                std::wcout<<std::endl;
+                std::wcout<<std::endl<<std::endl<<std::endl;
             }
         }
     }
     else
     {
-        std::cout<<"xxxxxx "<<doc->GetstrDocName() <<" is similar to "<<str_SimilarDoc<<std::endl;
+        const char* pch_DocName =doc->GetstrDocName().c_str();
+        const char* pch_SimilarDocName =str_SimilarDoc.c_str();
+        std::wcout<<L"xxxxxx "<<SplitContents::ConvertCharArraytoWString(pch_DocName) <<L" is similar to "<<pch_SimilarDocName<<std::endl;
     }
     return 0;
 }
