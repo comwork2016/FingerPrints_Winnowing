@@ -91,14 +91,16 @@ int DocumentOperation::SearchLeak(const std::string& str_DocPath)
                 TextRange textrange_DBDoc = similarDoc.vec_DBDocSimilarTextRange[j]; //数据库中文档的相同的hash;
                 // 搜索文档的内容和位置
                 int n_OriginLength = textrange_SearchDoc.offset_end - textrange_SearchDoc.offset_begin;
-                const char* pch_OriginWord = doc->GetstrContents().substr(textrange_SearchDoc.offset_begin, n_OriginLength).c_str();
+                std::string str_OriginWord = doc->GetstrContents().substr(textrange_SearchDoc.offset_begin, n_OriginLength);
+                const char* pch_OriginWord = str_OriginWord.c_str();
                 std::wcout<<L"["<<textrange_SearchDoc.offset_begin<<","<<textrange_SearchDoc.offset_end<<L","<<n_OriginLength<<L"]"<<std::endl;
-                std::wstring wstr_SameTextSearch = SplitContents::ConvertCharArraytoWString(pch_OriginWord);
+                std::wstring wstr_SameTextSearch = SplitContents::ConvertCharArraytoWString(pch_OriginWord,n_OriginLength);
                 std::wcout<<wstr_SameTextSearch<<std::endl<<std::endl;
                 //数据库中文档的内容和位置
                 Document* docDB = new Document(similarDoc.str_DBDoc);// 数据库中的文档信息
                 int n_DBLength = textrange_DBDoc.offset_end - textrange_DBDoc.offset_begin;
-                const char* pch_DBWord = docDB->GetstrContents().substr(textrange_DBDoc.offset_begin, n_DBLength).c_str();
+                std::string str_DBWord = docDB->GetstrContents().substr(textrange_DBDoc.offset_begin, n_DBLength);
+                const char* pch_DBWord = str_DBWord.c_str();
                 std::wcout<<L"["<<textrange_DBDoc.offset_begin<<","<<textrange_DBDoc.offset_end<<L","<<n_DBLength<<L"]"<<std::endl;
                 std::wstring wstr_SameTextDB = SplitContents::ConvertCharArraytoWString(pch_DBWord);
                 std::wcout<<wstr_SameTextDB<<std::endl;
