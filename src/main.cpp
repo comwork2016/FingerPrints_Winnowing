@@ -7,7 +7,7 @@ int main()
     std::locale::global(std::locale(""));
     std::string str_InputDir = "./in/";
     //将一个目录中的文件加入到数据库中
-    DocumentOperation::AddDirectoryDocuments(str_InputDir);
+    //DocumentOperation::AddDirectoryDocuments(str_InputDir);
     //查询数据泄露
     std::string str_LeakDoc = "./test/leak.txt";
     DocumentOperation::SearchLeak(str_LeakDoc);
