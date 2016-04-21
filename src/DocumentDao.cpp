@@ -237,8 +237,9 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                 std::wcout<<textrange_SearchDoc.offset_begin<<"==="<<textrange_SearchDoc.offset_end<<"          "<<textrange_DBDoc.offset_begin<<"-----"<<textrange_DBDoc.offset_end<<std::endl;
             }*/
             //保存相似文档信息
-            int n_MaxDocSize = doc->GetstrContents().size() < docDB->GetstrContents().size()? doc->GetstrContents().size() : docDB->GetstrContents().size();
-            float f_similarity = float(n_SameContentsBytes)/n_MaxDocSize;
+//            int n_MinDocSize = doc->GetstrContents().size() < docDB->GetstrContents().size()? doc->GetstrContents().size() : docDB->GetstrContents().size();
+//            float f_similarity = float(n_SameContentsBytes)/n_MinDocSize;
+            float f_similarity = float(n_SameContentsBytes)/doc->GetstrContents().size();
             FingerPrintsSimilarDocument similarDoc;
             similarDoc.str_SearchDoc = doc->GetstrDocPath();
             similarDoc.str_DBDoc = str_DocPathInDB;

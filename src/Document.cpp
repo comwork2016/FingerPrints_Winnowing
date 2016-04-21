@@ -40,8 +40,7 @@ void Document::SplitContentsToWords()
         {
             SplitedHits sh_hits = *it;
             std::wcout<<sh_hits.words<<"["<<sh_hits.offset<<","<<sh_hits.length<<","<<sh_hits.hashValue<<"]"<<std::endl;
-        }
-    */
+        }*/
     /*输出分词结果到文件中
     std::wofstream wofs_Doc;
     std::string out_Doc = "./tmp/分词_"+this->m_strDocName;
@@ -69,38 +68,6 @@ void Document::CalcSimHash()
 void Document::PickFingerPrints()
 {
     this->m_FingerPrints = WinNowing::PickFingerPrints(this->m_vecSplitedHits);
-    /*输出选出的指纹信息
-    for(int i=0;i<this->m_FingerPrints.size();i++)
-    {
-        KGramHash kgram_SearchDoc = this->m_FingerPrints[i];
-                SplitedHits hits_SearchDocFirst = this->m_vecSplitedHits[kgram_SearchDoc.n_splitedHitsIndex];
-                SplitedHits hits_SearchDocLast = this->m_vecSplitedHits[kgram_SearchDoc.n_splitedHitsIndex + KGRAM-1];
-                std::wcout<<L"["<<hits_SearchDocFirst.offset<<","<<hits_SearchDocLast.offset + hits_SearchDocLast.length<<L"]";
-                int n_OriginLength = hits_SearchDocLast.offset + hits_SearchDocLast.length - hits_SearchDocFirst.offset;
-                const char* pch_OriginWord = this->m_strContents.substr(hits_SearchDocFirst.offset, n_OriginLength).c_str();
-                std::wcout<<SplitContents::ConvertCharArraytoWString(pch_OriginWord)<<std::endl;
-    }
-    std::wcout<<std::endl<<std::endl<<std::endl;*/
-    /*输出文件指纹结果到文件中
-    std::wofstream wofs_Doc;
-    std::string out_Doc = "./tmp/指纹_"+this->m_strDocName;
-    wofs_Doc.open(out_Doc.c_str(),std::ios::out);
-
-    for(int i=0; i<this->m_FingerPrints.size(); i++)
-    {
-        KGramHash kgram_SearchDoc = this->m_FingerPrints[i];
-        SplitedHits hits_SearchDocFirst = this->m_vecSplitedHits[kgram_SearchDoc.n_splitedHitsIndex];
-        SplitedHits hits_SearchDocLast = this->m_vecSplitedHits[kgram_SearchDoc.n_splitedHitsIndex + KGRAM-1];
-        wofs_Doc<<L"["<<kgram_SearchDoc.hashValue<<":"<<hits_SearchDocFirst.offset<<":"<<hits_SearchDocLast.offset + hits_SearchDocLast.length - hits_SearchDocFirst.offset<<L"]";
-        for(int k=kgram_SearchDoc.n_splitedHitsIndex; k<kgram_SearchDoc.n_splitedHitsIndex+KGRAM; k++)
-        {
-            SplitedHits hits_SearchDoc = this->m_vecSplitedHits[k]; //待比对文档中的分词信息
-            wofs_Doc<<hits_SearchDoc.words<<L" ";
-        }
-    wofs_Doc<<std::endl;
-    }
-    wofs_Doc.close();
-    */
 }
 
 Document::~Document()

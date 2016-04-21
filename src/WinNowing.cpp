@@ -60,7 +60,7 @@ std::vector<KGramHash> CalcRabinHash(const std::vector<SplitedHits>& vec_Splited
             kgram_Last = kgram_Now;
         }
     }
-    if(n_kcount<KGRAM)//分词个数小于K值，则作为一个KGRAM
+    if(n_kcount<=KGRAM)//分词个数小于K值，则作为一个KGRAM
     {
         kgram_Now.offset_begin = kgram_Now.vec_splitedHits[0].offset;
         kgram_Now.offset_end = kgram_Now.vec_splitedHits[n_kcount-1].offset + kgram_Now.vec_splitedHits[n_kcount-1].length+1;

@@ -72,6 +72,19 @@ int DocumentOperation::SearchLeak(const std::string& str_DocPath)
     if(str_SimilarDoc=="")
     {
         doc->PickFingerPrints();
+
+/*输出选出的指纹信息
+        for(int i=0; i<doc->GetFingerPrints().size(); i++)
+        {
+            KGramHash kgram_SearchDoc = doc->GetFingerPrints()[i];
+            std::wcout<<L"["<<kgram_SearchDoc.offset_begin<<","<<kgram_SearchDoc.offset_end<<L"]";
+            int n_OriginLength = kgram_SearchDoc.offset_end + kgram_SearchDoc.offset_begin;
+            std::string str_OriginWord = doc->GetstrContents().substr(kgram_SearchDoc.offset_begin, n_OriginLength);
+            const char* pch_OriginWord = str_OriginWord.c_str();
+            std::wcout<<SplitContents::ConvertCharArraytoWString(pch_OriginWord)<<std::endl;
+        }
+        std::wcout<<std::endl;
+*/
         //查询相同的指纹
         std::vector<FingerPrintsSimilarDocument> vec_SimilarDocument = docDao->GetFingerPrintsSimilarDocument(doc);
         /*遍历输出相同指纹*/
@@ -80,9 +93,9 @@ int DocumentOperation::SearchLeak(const std::string& str_DocPath)
             FingerPrintsSimilarDocument similarDoc = vec_SimilarDocument[i];
             const char* pch_DocPath = doc->GetstrDocPath().c_str();
             const char* pch_SimDocPath = similarDoc.str_DBDoc.c_str();
-            std::wcout<<L"*************************************************************************************************"<<std::endl;
+            std::wcout<<std::endl<<std::endl<<L"*************************************************************************************************"<<std::endl;
             std::wcout<<L"similarity between "<<SplitContents::ConvertCharArraytoWString(pch_DocPath)<<L" and "<<SplitContents::ConvertCharArraytoWString(pch_SimDocPath)<<L" is "<<100*similarDoc.f_similarity<<"%"<<std::endl;
-            std::wcout<<L"*************************************************************************************************"<<std::endl<<std::endl<<std::endl;
+            std::wcout<<L"*************************************************************************************************"<<std::endl;
             int n_SameSize = similarDoc.vec_SearchDocSimilarTextRange.size();
             for(int j=0; j<n_SameSize; j++)
             {
