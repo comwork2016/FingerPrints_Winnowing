@@ -18,9 +18,6 @@ int DocumentOperation::AddDocument(const std::string& str_DocPath)
     {
         //挑选指纹信息并存入
         doc->PickParaFingerPrints();
-
-        doc->Dispaly();
-
         docDao->Insert(doc);
         const char* pch_DocName = doc->GetstrDocName().c_str();
         std::wcout<<StringUtil::ConvertCharArraytoWString(pch_DocName) <<L" inserted"<<std::endl;
@@ -37,10 +34,8 @@ int DocumentOperation::AddDocument(const std::string& str_DocPath)
 //将整个目录中的文件添加到数据库中
 int DocumentOperation::AddDirectoryDocuments(const std::string& str_InputDir)
 {
-    /*
         DocumentDao* daoDelete = new DocumentDao();
         daoDelete->DeleteAll();
-
         //读取目录下所有的文件
         struct dirent *ptr;
         DIR *dir;
@@ -60,7 +55,7 @@ int DocumentOperation::AddDirectoryDocuments(const std::string& str_InputDir)
             std::string str_DocPath = str_InputDir + ptr->d_name;
             AddDocument(str_DocPath);
         }
-        closedir(dir);*/
+        closedir(dir);
     return 0;
 }
 

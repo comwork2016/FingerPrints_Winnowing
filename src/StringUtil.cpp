@@ -16,6 +16,31 @@ std::wstring StringUtil::ConvertCharArraytoWString(const std::string& str)
     return wstr;
 }
 
+//检查是不是空白行
+bool StringUtil::isStringBlank(const std::string& str)
+{
+    for(int i=0;i<str.length();i++)
+    {
+        if(str[i]!=' ')
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool StringUtil::isStringBlank(const std::wstring& wstr)
+{
+    for(int i=0;i<wstr.length();i++)
+    {
+        if(wstr[i] != L' ' && wstr[i] != L' ')
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 /*
     str_Source: string to be splited
     str_Delims: split separator
@@ -48,7 +73,7 @@ std::vector<std::wstring> StringUtil::SplitString(const std::wstring wstr_Source
         {
             wstr += wstr_Source[pos++];
         }
-        if(!wstr.empty())
+        if(!wstr.empty() && !isStringBlank(wstr))
         {
             vec_wstrSplited.push_back(wstr);
         }

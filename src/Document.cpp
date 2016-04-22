@@ -43,7 +43,7 @@ int Document::ReadDocument()
             this->m_strContents.append(1,'\n');
             offset++;
         }
-        if(n_LineLength != 0) //空白行不计为段落
+        if(n_LineLength != 0 && !StringUtil::isStringBlank(std::string(line))) //空白行不计为段落
         {
             this->m_vecParagraph.push_back(para);
             n_ParaIndex++;

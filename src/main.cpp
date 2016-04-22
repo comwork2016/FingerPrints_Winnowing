@@ -11,7 +11,7 @@ int main()
     std::string str_InputDir = "./in/";
     //将一个目录中的文件加入到数据库中
     //DocumentOperation::AddDirectoryDocuments(str_InputDir);
-    DocumentOperation::AddDocument("./in/Winnowing");
+    DocumentOperation::AddDocument("./in/simhash进行文本查重");
     //查询数据泄露
     std::string str_LeakDoc = "./test/leak.txt";
     //DocumentOperation::SearchLeak(str_LeakDoc);
