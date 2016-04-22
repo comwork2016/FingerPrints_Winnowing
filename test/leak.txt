@@ -7,3 +7,14 @@ Simhash具有两个“冲突的性质”：
 
 d-bits的表示范围有2^d，总量N个指纹，平均 每个表示后面只有N/(2^d)个
 快速定位到前缀是d的位置以后，直接比较N/(2^k)个指纹。
+
+5）最后合并所有Ti中检索出的结果
+
+Others may permit access without enforcing access control. Other rules may also be imposed to organize content. 
+
+ test wiki systems argue that these 
+
+算法与文档内容的位置不存在依赖关系
+
+研究生命起源，测试近义词替换功能。
+abc edf；

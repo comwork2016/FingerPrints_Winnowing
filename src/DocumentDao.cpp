@@ -9,7 +9,7 @@ DocumentDao::DocumentDao()
 }
 
 //插入一个文档到数据库中
-int DocumentDao::Insert(Document*& doc)
+int DocumentDao::Insert(const Document* doc)
 {
     mongo::BSONObjBuilder b;
     b.append("filename",doc->GetstrDocName());
@@ -65,7 +65,7 @@ bool IsSimHashSimilar(const SIMHASH_TYPE& l_num1, const SIMHASH_TYPE& l_num2)
 }
 
 //从数据库中查询simhash值相似的文件名称，没有则返回""
-std::string DocumentDao::QuerySIMSimilarity(Document*& doc)
+std::string DocumentDao::QuerySIMSimilarity(const Document* doc)
 {
     mongo::BSONObj bo_columns = BSON("simhash"<<1<<"filelength"<<1<<"filename"<<1);
     mongo::auto_ptr<mongo::DBClientCursor> cursor = this->m_Conn.query(this->m_DBName,mongo::Query(),0,0,&bo_columns);
@@ -92,7 +92,7 @@ std::string DocumentDao::QuerySIMSimilarity(Document*& doc)
 }
 
 //从数据库中查询指纹相似的文档
-std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocument(Document*& doc)
+std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocument(const Document* doc)
 {
     std::vector<FingerPrintsSimilarDocument> vec_SimilarDocument;
     int n_DocFingerSize = doc->GetFingerPrints().size();

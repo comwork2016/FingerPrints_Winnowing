@@ -18,7 +18,7 @@ class SplitContents
     public:
         SplitContents();
         virtual ~SplitContents();
-        static std::wstring ConvertCharArraytoWString(const char*& pch,int length = 0);
+        static std::wstring ConvertCharArraytoWString(const char* pch,int length = 0);
         static std::vector<SplitedHits> SplitContentsToWords(const std::string& str_contents);
 
     protected:

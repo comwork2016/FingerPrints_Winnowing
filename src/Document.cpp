@@ -30,17 +30,12 @@ int Document::ReadDocument()
     ifs_Doc.close();
     return OK_READFILE;
 }
+
+//将整个内容分词处理
 void Document::SplitContentsToWords()
 {
     //对文档内容进行分词处理
     this->m_vecSplitedHits = SplitContents::SplitContentsToWords(this->m_strContents);
-    /*  遍历输出分词结果
-        std::wcout<<this->m_vecSplitedHits.size()<<std::endl;
-        for(std::vector<SplitedHits>::iterator it=this->m_vecSplitedHits.begin();it!=this->m_vecSplitedHits.end();it++)
-        {
-            SplitedHits sh_hits = *it;
-            std::wcout<<sh_hits.words<<"["<<sh_hits.offset<<","<<sh_hits.length<<","<<sh_hits.hashValue<<"]"<<std::endl;
-        }*/
     /*输出分词结果到文件中
     std::wofstream wofs_Doc;
     std::string out_Doc = "./tmp/分词_"+this->m_strDocName;
@@ -59,9 +54,6 @@ void Document::CalcSimHash()
 {
     //利用分词结果 计算文档的SimHash值
     this->m_lSimHash = SimHash::CalcSimHash(this->m_vecSplitedHits);
-    /*输出文档的simhash值
-        std::cout<<this->m_strDocName<<"---"<<this->m_lSimHash<<std::endl;
-    */
 }
 
 //挑选文件指纹

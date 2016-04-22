@@ -11,10 +11,10 @@ class DocumentDao
         DocumentDao();
         virtual ~DocumentDao();
 
-        int Insert(Document*& doc);
+        int Insert(const Document* doc);
         int DeleteAll();
-        std::string QuerySIMSimilarity(Document*& doc);
-        std::vector<FingerPrintsSimilarDocument> GetFingerPrintsSimilarDocument(Document*& doc);
+        std::string QuerySIMSimilarity(const Document* doc);
+        std::vector<FingerPrintsSimilarDocument> GetFingerPrintsSimilarDocument(const Document* doc);
     protected:
     private:
         mongo::DBClientConnection m_Conn;
