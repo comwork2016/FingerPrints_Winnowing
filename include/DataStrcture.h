@@ -23,6 +23,17 @@ struct KGramHash
     std::vector<SplitedHits> vec_splitedHits; //组合包含的分词信息
 };
 
+//定义结构体，存储段落信息
+struct Paragraph
+{
+    int index; //段落索引
+    int offset_begin;//段落起始偏移值
+    int offset_end;//段落结束偏移值
+    SIMHASH_TYPE hashValue;//段落simhash值
+    std::vector<SplitedHits> vec_splitedHits; //段落包含的分词信息
+    std::vector<KGramHash> vec_ParaFingerPrints; //段落指纹信息
+};
+
 //定义结构体，文档某一段之间的内容
 struct TextRange
 {

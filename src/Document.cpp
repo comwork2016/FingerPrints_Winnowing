@@ -24,42 +24,83 @@ int Document::ReadDocument()
     {
         return ERROR_OPENFILE;
     }
-    std::stringstream ss;
-    ss<<ifs_Doc.rdbuf();
-    this->m_strContents = ss.str();
+    int offset=0;
+    int n_ParaIndex = 0;
+    while(!ifs_Doc.eof())
+    {
+        Paragraph para;
+        para.index = n_ParaIndex;
+        para.offset_begin = offset;
+        char line[LINE_LENGTH];
+        ifs_Doc.getline(line,LINE_LENGTH);
+        int n_LineLength = strlen(line);
+        offset+=n_LineLength;
+        this->m_strContents.append(line,strlen(line));
+        para.offset_end = offset;
+        // 不是文章结尾时将原文档的换行符加回去
+        if(!ifs_Doc.eof())
+        {
+            this->m_strContents.append(1,'\n');
+            offset++;
+        }
+        if(n_LineLength != 0) //空白行不计为段落
+        {
+            this->m_vecParagraph.push_back(para);
+            n_ParaIndex++;
+        }
+    }
     ifs_Doc.close();
     return OK_READFILE;
 }
 
-//将整个内容分词处理
-void Document::SplitContentsToWords()
+//计算段落和全文的simhash
+void Document::CalcParaAndDocSimHash()
 {
-    //对文档内容进行分词处理
-    this->m_vecSplitedHits = SplitContents::SplitContentsToWords(this->m_strContents);
-    /*输出分词结果到文件中
-    std::wofstream wofs_Doc;
-    std::string out_Doc = "./tmp/分词_"+this->m_strDocName;
-    wofs_Doc.open(out_Doc.c_str(),std::ios::out);
-    for(std::vector<SplitedHits>::iterator it=this->m_vecSplitedHits.begin();it!=this->m_vecSplitedHits.end();it++)
+    SplitContents* splitContents = new SplitContents();
+    for(int i=0;i<this->m_vecParagraph.size();i++)
+    {
+        Paragraph& para = this->m_vecParagraph[i];
+        std::string str_para = this->m_strContents.substr(para.offset_begin,para.offset_end-para.offset_begin);
+        para.vec_splitedHits = splitContents->SplitContentsToWords(str_para);
+        para.hashValue = HashUtil::CalcParaSimHash(para.vec_splitedHits);
+    }
+    this->m_lSimHash = HashUtil::CalcDocSimHash(this->m_vecParagraph);
+}
+
+void Document::PickParaFingerPrints()
+{
+    for(int i=0;i<this->m_vecParagraph.size();i++)
+    {
+        Paragraph& para = this->m_vecParagraph[i];
+        para.vec_ParaFingerPrints = WinNowing::PickFingerPrints(para.vec_splitedHits);
+    }
+}
+
+void Document::Dispaly()
+{
+     /*输出段落信息*/
+    for(int i=0;i<this->m_vecParagraph.size();i++)
+    {
+        Paragraph para = this->m_vecParagraph[i];
+        std::string str_para = this->m_strContents.substr(para.offset_begin,para.offset_end-para.offset_begin);
+        //段落号，开始偏移值，结束偏移值，simhash值
+        std::wcout<<L"["<<para.index<<":"<<para.offset_begin<<","<<para.offset_end<<","<<para.hashValue<<"]"<<std::endl;
+        // 段落文本
+        // std::wcout<<StringUtil::ConvertCharArraytoWString(str_para)<<std::endl;
+        //段落分词
+        for(int j=0;j<para.vec_splitedHits.size();j++)
         {
-            SplitedHits sh_hits = *it;
-            wofs_Doc<<sh_hits.words<<"["<<sh_hits.offset<<":::"<<sh_hits.length<<":::"<<sh_hits.hashValue<<"]"<<std::endl;
-
+            std::wcout<<para.vec_splitedHits[j].words<<" ";
         }
-    wofs_Doc.close();
-    */
-}
-
-void Document::CalcSimHash()
-{
-    //利用分词结果 计算文档的SimHash值
-    this->m_lSimHash = SimHash::CalcSimHash(this->m_vecSplitedHits);
-}
-
-//挑选文件指纹
-void Document::PickFingerPrints()
-{
-    this->m_FingerPrints = WinNowing::PickFingerPrints(this->m_vecSplitedHits);
+        std::wcout<<std::endl;
+        //段落指纹信息
+        for(int j=0;j<para.vec_ParaFingerPrints.size();j++)
+        {
+            KGramHash finger = para.vec_ParaFingerPrints[j];
+            std::wcout<<"["<<finger.offset_begin<<","<<finger.offset_end<<","<<finger.hashValue<<"]" ;
+        }
+        std::wcout<<std::endl<<std::endl<<std::endl;
+    }
 }
 
 Document::~Document()

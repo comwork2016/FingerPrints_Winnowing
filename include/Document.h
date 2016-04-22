@@ -5,13 +5,11 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 
 #include "SplitContents.h"
-#include "SimHash.h"
 #include "WinNowing.h"
 
-#include "Constants.h"
+#include "StringUtil.h"
 
 // to delete
 #include <string.h>
@@ -24,22 +22,21 @@ class Document
         std::string GetstrDocPath() const { return m_strDocPath; }
         std::string GetstrDocName() const { return m_strDocName; }
         std::string GetstrContents() const { return m_strContents; }
-        std::vector<SplitedHits> GetvecSplitedHits() const { return m_vecSplitedHits; }
+        std::vector<Paragraph> GetvecParagraph() const { return m_vecParagraph; }
         SIMHASH_TYPE GetlSimHash() const { return m_lSimHash; }
-        std::vector<KGramHash> GetFingerPrints() const { return m_FingerPrints; }
-        void PickFingerPrints();
-        void SplitContentsToWords();
-        void CalcSimHash();
-    protected:
-        int ReadDocument();
 
+        int ReadDocument();
+        void CalcParaAndDocSimHash();
+        void PickParaFingerPrints();
+
+        void Dispaly();
+    protected:
     private:
         std::string m_strDocPath;
         std::string m_strDocName;
         std::string m_strContents;
-        std::vector<SplitedHits> m_vecSplitedHits;
+        std::vector<Paragraph> m_vecParagraph;
         SIMHASH_TYPE m_lSimHash;
-        std::vector<KGramHash> m_FingerPrints;
 };
 
 #endif // DOCUMENT_H
