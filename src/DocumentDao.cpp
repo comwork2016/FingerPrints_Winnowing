@@ -109,6 +109,7 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
         //遍历待比对的文档指纹
         std::vector<KGramHash> docFingerPrints = doc->GetFingerPrints();
         int n_SameContentsBytes = 0;
+        const int n_wcharBit = sizeof(wchar_t) - 1;
         for(std::vector<KGramHash>::iterator it = docFingerPrints.begin(); it!= docFingerPrints.end(); it++)
         {
             KGramHash kgramHash_SearchDoc = *it;
@@ -135,8 +136,12 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                         n_SearchBegin--;
                         n_DBBegin--;
                     }
-                    textrange_SearchDoc.offset_begin = n_SearchBegin+1;
-                    textrange_DBDoc.offset_begin = n_DBBegin+1;
+                    //计算扩展时相同的字符个数
+                    int n_NumOfWchar = (textrange_SearchDoc.offset_begin - n_SearchBegin - 1)/n_wcharBit;
+                    textrange_SearchDoc.offset_begin -= n_NumOfWchar*n_wcharBit;
+                    textrange_DBDoc.offset_begin -= n_NumOfWchar*n_wcharBit;
+                    //textrange_SearchDoc.offset_begin = n_SearchBegin+1;
+                    //textrange_DBDoc.offset_begin = n_DBBegin+1;
                 }
                 else
                 {
@@ -150,8 +155,8 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                         textrange_SearchDoc.offset_begin = textrange_SearchDocLast.offset_begin;
                         textrange_SearchDoc.offset_end = kgramHash_SearchDoc.offset_end;
                         //同时删除向量中的上一条记录。
-                        vec_SearchDocSimilarTextRange.pop_back();
                         n_SameContentsBytes -= textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
+                        vec_SearchDocSimilarTextRange.pop_back();
                         //修改相同文本范围
                         textrange_DBDoc.offset_begin = textrange_DBDocLast.offset_begin;
                         //同时删除向量中的上一条记录。
@@ -181,23 +186,31 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                         {
                             textrange_SearchDoc.offset_begin = textrange_SearchDocLast.offset_begin;
                             textrange_DBDoc.offset_begin = textrange_DBDocLast.offset_begin;
+                            n_SameContentsBytes -= textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
                             vec_SearchDocSimilarTextRange.pop_back();
                             vec_DBDocSimilarTextRange.pop_back();
-                            n_SameContentsBytes -= textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
                         }
                         else
                         {
                             //如果两个匹配范围不重合，则修改上一个文本范围，并修改当前文本范围
                             n_SameContentsBytes -= textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
-                            textrange_SearchDocLast.offset_end = n_SearchLastEnd-1;
-                            textrange_DBDocLast.offset_end = n_DBLastEnd-1;
+                            //计算扩展匹配事相同的字符个数
+                            int n_NumOfWcharLast = (n_SearchLastEnd - textrange_SearchDocLast.offset_end + 1)/n_wcharBit;
+                            textrange_SearchDocLast.offset_end += n_NumOfWcharLast*n_wcharBit;
+                            textrange_DBDocLast.offset_end += n_NumOfWcharLast*n_wcharBit;
+                            //textrange_SearchDocLast.offset_end = n_SearchLastEnd-1;
+                            //textrange_DBDocLast.offset_end = n_DBLastEnd-1;
                             vec_SearchDocSimilarTextRange.pop_back();
                             vec_DBDocSimilarTextRange.pop_back();
+                            n_SameContentsBytes += textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
                             vec_SearchDocSimilarTextRange.push_back(textrange_SearchDocLast);
                             vec_DBDocSimilarTextRange.push_back(textrange_DBDocLast);
-                            n_SameContentsBytes += textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
-                            textrange_SearchDoc.offset_begin = n_SearchBegin+1;
-                            textrange_DBDoc.offset_begin = n_DBBegin+1;
+                            //计算扩展匹配时相同的字符个数
+                            int n_NumOfWchar = (textrange_SearchDoc.offset_begin - n_SearchBegin - 1)/n_wcharBit;
+                            textrange_SearchDoc.offset_begin -= n_NumOfWchar*n_wcharBit;
+                            textrange_DBDoc.offset_begin -= n_NumOfWchar*n_wcharBit;
+                            //textrange_SearchDoc.offset_begin = n_SearchBegin+1;
+                            //textrange_DBDoc.offset_begin = n_DBBegin+1;
                         }
                     }
                 }
@@ -220,12 +233,15 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                 n_SearchLastEnd++;
                 n_DBLastEnd++;
             }
-            n_SameContentsBytes -= textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
-            textrange_SearchDocLast.offset_end = n_SearchLastEnd-1;
-            textrange_DBDocLast.offset_end = n_DBLastEnd-1;
+            //计算相同的字符个数
+            int n_NumOfWcharLast = (n_SearchLastEnd - textrange_SearchDocLast.offset_end + 1)/n_wcharBit;
+            textrange_SearchDocLast.offset_end += n_NumOfWcharLast*n_wcharBit;
+            textrange_DBDocLast.offset_end += n_NumOfWcharLast*n_wcharBit;
+            //textrange_SearchDocLast.offset_end = n_SearchLastEnd-1;
+            //textrange_DBDocLast.offset_end = n_DBLastEnd-1;
+            n_SameContentsBytes += textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
             vec_SearchDocSimilarTextRange.pop_back();
             vec_DBDocSimilarTextRange.pop_back();
-            n_SameContentsBytes += textrange_SearchDocLast.offset_end - textrange_SearchDocLast.offset_begin;
             vec_SearchDocSimilarTextRange.push_back(textrange_SearchDocLast);
             vec_DBDocSimilarTextRange.push_back(textrange_DBDocLast);
             /*遍历重复内容的范围值
