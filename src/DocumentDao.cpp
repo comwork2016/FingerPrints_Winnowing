@@ -18,6 +18,7 @@ int DocumentDao::Insert(const Document* doc)
     const char* pch_Contents= doc->GetstrContents().c_str();
     b.append("filelength",static_cast<int>(StringUtil::ConvertCharArraytoWString(pch_Contents).length()));
     b.appendNumber("docsimhash",static_cast<long long>(doc->GetlSimHash()));
+    //b.appendNumber("paragraphsize",static_cast<int>(doc->GetvecParagraph().size()));
     std::vector<Paragraph> vec_Paragraph = doc->GetvecParagraph();
     mongo::BSONObjBuilder bb_allparas; // 所有段落作为一个BSON对象存到数据库中
     // 遍历段落信息
@@ -26,7 +27,9 @@ int DocumentDao::Insert(const Document* doc)
         Paragraph para = vec_Paragraph[k];
         // 保存一个段落信息
         mongo::BSONObjBuilder bb_para; //某一个段落中的位置和指纹信息
+        //simhash信息
         SIMHASH_TYPE l_ParaHash = para.hashValue;
+        bb_para.appendNumber("parasimhash",static_cast<long long>(l_ParaHash));
         bb_para.appendNumber("parabegin",para.offset_begin);
         bb_para.appendNumber("paraend",para.offset_end);
         // 保存一个段落的指纹信息
@@ -43,10 +46,16 @@ int DocumentDao::Insert(const Document* doc)
             bb_finger.append(str_FingerPrint,bb_offset.obj());
         }
         bb_para.append("fingerprints",bb_finger.obj());
+        std::stringstream ss_ParaIndex;
+        ss_ParaIndex << para.index;
+        std::string str_ParaIndex = ss_ParaIndex.str();
+        bb_allparas.append(str_ParaIndex,bb_para.obj());
+        /*
         std::stringstream ss_ParaSimHash;
         ss_ParaSimHash << para.hashValue;
         std::string str_ParaSimHash = ss_ParaSimHash.str();
         bb_allparas.append(str_ParaSimHash,bb_para.obj());
+        */
     }
     b.append("paragraph",bb_allparas.obj());
     this->m_Conn.insert(this->m_DBName,b.obj());
@@ -60,26 +69,6 @@ int DocumentDao::DeleteAll()
     return 0;
 }
 
-//计算海明距离
-bool IsSimHashSimilar(const SIMHASH_TYPE& l_num1, const SIMHASH_TYPE& l_num2)
-{
-    int hd = 0;
-    SIMHASH_TYPE x = l_num1^l_num2;
-    while (x && hd<=HAMMINGDIST)
-    {
-        hd += 1;
-        x = x&(x-1);//减一之后二进制的数字里面会减少一个1
-    }
-    if(hd<=HAMMINGDIST)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 //从数据库中查询simhash值相似的文件名称，没有则返回""
 std::string DocumentDao::QuerySIMSimilarity(const Document* doc)
 {
@@ -89,7 +78,7 @@ std::string DocumentDao::QuerySIMSimilarity(const Document* doc)
     {
         mongo::BSONObj p = cursor->next();
         SIMHASH_TYPE l_SimHash = p.getField("docsimhash").numberLong();
-        if(IsSimHashSimilar(doc->GetlSimHash(),l_SimHash))
+        if(HashUtil::IsSimHashSimilar(doc->GetlSimHash(),l_SimHash))
         {
             //两个近似网页的文章长度差距应在20%以内
             int n_DBFileLength = p.getIntField("filelength");
@@ -108,7 +97,7 @@ std::string DocumentDao::QuerySIMSimilarity(const Document* doc)
 }
 
 //对相同内容进行扩展匹配
-void ExtendMatch(Document* doc, const Document *docDB,std::vector<TextRange>& vec_SearchDocSimilarTextRange,std::vector<TextRange>& vec_DBDocSimilarTextRange,int& n_SameContentsBytes)
+void ExtendMatch(const Document* doc, const Document *docDB,std::vector<TextRange>& vec_SearchDocSimilarTextRange,std::vector<TextRange>& vec_DBDocSimilarTextRange,int& n_SameContentsBytes)
 {
     //待比对的文档中相同指纹范围 和 数据库的文档中相同指纹范围；
     std::vector<TextRange> vec_ExtendedSearchDocSimilarTextRange;
@@ -238,19 +227,41 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
     {
         mongo::BSONObj p = cursor->next();
         std::string str_DocPathInDB = p.getStringField("filepath");
-        mongo::BSONObj bson_AllParaFingerPrints = p.getObjectField("paragraph"); //数据库中文档的所有段落指纹信息
+        mongo::BSONObj bson_DBDocAllParaFingerPrints = p.getObjectField("paragraph"); //数据库中文档的所有段落指纹信息
         std::vector<TextRange> vec_SearchDocSimilarTextRange;//待比对的文档中相同指纹范围
         std::vector<TextRange> vec_DBDocSimilarTextRange;//数据库的文档中相同指纹范围
         //遍历待比对的文档指纹
         std::vector<Paragraph> doc_SearchDocPara  = doc->GetvecParagraph();
         int n_SameContentsBytes = 0;
-        for(int i=0; i<n_SearchDocParaSize; i++) //对于每一段查找重复的指纹信息
+        for(int i=0; i<n_SearchDocParaSize; i++) //对于要查找重复指纹信息的每个段落
         {
             Paragraph& para_SearchDoc = doc_SearchDocPara[i];
-            std::stringstream ss_ParaSimHash;
-            ss_ParaSimHash << para_SearchDoc.hashValue;
-            mongo::BSONObj bson_ParaSimHash = bson_AllParaFingerPrints.getObjectField(ss_ParaSimHash.str().c_str());//数据库中一个段落的指纹信息
-            if(!bson_ParaSimHash.isEmpty())// 数据库中查找到相同的段落，则加入到相同指纹向量中
+            std::vector<mongo::BSONObj> vec_DBDocParaFingers;
+            bson_DBDocAllParaFingerPrints.vals(vec_DBDocParaFingers);// 获取所有段落中的指纹信息
+            bool b_IsSimilarPara = false;
+            for(int i_DBDocPara=0; i_DBDocPara<vec_DBDocParaFingers.size(); i_DBDocPara++)
+            {
+                mongo::BSONObj obj_DBPara = vec_DBDocParaFingers[i_DBDocPara];
+                SIMHASH_TYPE l_DBDocSimHash = obj_DBPara.getField("parasimhash").numberLong();
+                if(HashUtil::IsSimHashSimilar(para_SearchDoc.hashValue,l_DBDocSimHash))// 数据库中查找到相似的段落，则加入到相同指纹向量中
+                {
+                    TextRange textrange_SearchDoc;
+                    TextRange textrange_DBDoc;
+                    textrange_SearchDoc.offset_begin = para_SearchDoc.offset_begin;
+                    textrange_SearchDoc.offset_end = para_SearchDoc.offset_end;
+                    textrange_DBDoc.offset_begin = obj_DBPara.getIntField("parabegin");
+                    textrange_DBDoc.offset_end = obj_DBPara.getIntField("paraend");
+                    vec_SearchDocSimilarTextRange.push_back(textrange_SearchDoc);
+                    vec_DBDocSimilarTextRange.push_back(textrange_DBDoc);
+                    b_IsSimilarPara = true;
+                    break;
+                }
+            }
+            if(b_IsSimilarPara)
+            {
+                continue;
+            }
+/*            if(!bson_ParaSimHash.isEmpty())// 数据库中查找到相同的段落，则加入到相同指纹向量中
             {
                 TextRange textrange_SearchDoc;
                 TextRange textrange_DBDoc;
@@ -260,7 +271,7 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                 textrange_DBDoc.offset_end = bson_ParaSimHash.getIntField("paraend");
                 vec_SearchDocSimilarTextRange.push_back(textrange_SearchDoc);
                 vec_DBDocSimilarTextRange.push_back(textrange_DBDoc);
-            }
+            }*/
             else
             {
                 //数据库文档中不存在相同的段落，则继续在所有段落中查找相同的KGram句子
@@ -269,12 +280,10 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                 {
                     //对于段落中每一个指纹，在数据库文档中的所有段落中查找相同指纹
                     KGramHash kgram_SearchDocParaFinger = para_SearchDoc.vec_ParaFingerPrints[i_SearchParaFinger];
-                    std::vector<mongo::BSONObj> vec_BSONParaFingers;
-                    bson_AllParaFingerPrints.vals(vec_BSONParaFingers);// 获取所有段落中的指纹信息
-                    for(int i_BSONParaFinger; i_BSONParaFinger<vec_BSONParaFingers.size(); i_BSONParaFinger++)
+                    for(int i_DBDocPara=0; i_DBDocPara<vec_DBDocParaFingers.size(); i_DBDocPara++)
                     {
-                        mongo::BSONObj obj_Para = vec_BSONParaFingers[i_BSONParaFinger];
-                        mongo::BSONObj obj_ParaFinger = vec_BSONParaFingers[i_BSONParaFinger];//一个段落的指纹信息
+                        mongo::BSONObj obj_Para = vec_DBDocParaFingers[i_DBDocPara];
+                        mongo::BSONObj obj_ParaFinger = obj_Para.getObjectField("fingerprints");//一个段落的指纹信息
                         std::stringstream ss_SearchFinger;
                         ss_SearchFinger<<kgram_SearchDocParaFinger.hashValue;
                         mongo::BSONObj obj_ParaFingerPos = obj_ParaFinger.getObjectField(ss_SearchFinger.str().c_str());

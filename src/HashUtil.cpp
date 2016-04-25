@@ -5,6 +5,27 @@ HashUtil::HashUtil()
     //ctor
 }
 
+
+//计算海明距离
+bool HashUtil::IsSimHashSimilar(const SIMHASH_TYPE& l_num1, const SIMHASH_TYPE& l_num2)
+{
+    int hd = 0;
+    SIMHASH_TYPE x = l_num1^l_num2;
+    while (x && hd<=HAMMINGDIST)
+    {
+        hd += 1;
+        x = x&(x-1);//减一之后二进制的数字里面会减少一个1
+    }
+    if(hd<=HAMMINGDIST)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 //计算文本的hash值
 SIMHASH_TYPE HashUtil::CalcWstringHash(const std::wstring& str)
 {
