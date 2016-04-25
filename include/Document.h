@@ -27,8 +27,8 @@ class Document
 
         int ReadDocument();
         void CalcParaAndDocSimHash();
-        void PickParaFingerPrints();
-
+        void PickAllParaFingerPrints();
+        void PickParaFingerPrints(int n_ParaIndex);
         void Dispaly();
     protected:
     private:

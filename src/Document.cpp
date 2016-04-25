@@ -57,7 +57,7 @@ int Document::ReadDocument()
 void Document::CalcParaAndDocSimHash()
 {
     SplitContents* splitContents = new SplitContents();
-    for(int i=0;i<this->m_vecParagraph.size();i++)
+    for(int i=0; i<this->m_vecParagraph.size(); i++)
     {
         Paragraph& para = this->m_vecParagraph[i];
         std::string str_para = this->m_strContents.substr(para.offset_begin,para.offset_end-para.offset_begin);
@@ -67,19 +67,25 @@ void Document::CalcParaAndDocSimHash()
     this->m_lSimHash = HashUtil::CalcDocSimHash(this->m_vecParagraph);
 }
 
-void Document::PickParaFingerPrints()
+void Document::PickAllParaFingerPrints()
 {
-    for(int i=0;i<this->m_vecParagraph.size();i++)
+    for(int i=0; i<this->m_vecParagraph.size(); i++)
     {
         Paragraph& para = this->m_vecParagraph[i];
         para.vec_ParaFingerPrints = WinNowing::PickFingerPrints(para.vec_splitedHits);
     }
 }
 
+void Document::PickParaFingerPrints(int n_ParaIndex)
+{
+    Paragraph& para = this->m_vecParagraph[n_ParaIndex];
+    para.vec_ParaFingerPrints = WinNowing::PickFingerPrints(para.vec_splitedHits);
+}
+
 void Document::Dispaly()
 {
-     /*输出段落信息*/
-    for(int i=0;i<this->m_vecParagraph.size();i++)
+    /*输出段落信息*/
+    for(int i=0; i<this->m_vecParagraph.size(); i++)
     {
         Paragraph para = this->m_vecParagraph[i];
         std::string str_para = this->m_strContents.substr(para.offset_begin,para.offset_end-para.offset_begin);
@@ -88,13 +94,13 @@ void Document::Dispaly()
         // 段落文本
         // std::wcout<<StringUtil::ConvertCharArraytoWString(str_para)<<std::endl;
         //段落分词
-        for(int j=0;j<para.vec_splitedHits.size();j++)
+        for(int j=0; j<para.vec_splitedHits.size(); j++)
         {
             std::wcout<<para.vec_splitedHits[j].words<<" ";
         }
         std::wcout<<std::endl;
         //段落指纹信息
-        for(int j=0;j<para.vec_ParaFingerPrints.size();j++)
+        for(int j=0; j<para.vec_ParaFingerPrints.size(); j++)
         {
             KGramHash finger = para.vec_ParaFingerPrints[j];
             std::wcout<<"["<<finger.offset_begin<<","<<finger.offset_end<<","<<finger.hashValue<<"]" ;

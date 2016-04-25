@@ -14,7 +14,7 @@ class DocumentDao
         int Insert(const Document* doc);
         int DeleteAll();
         std::string QuerySIMSimilarity(const Document* doc);
-        std::vector<FingerPrintsSimilarDocument> GetFingerPrintsSimilarDocument(const Document* doc);
+        std::vector<FingerPrintsSimilarDocument> GetFingerPrintsSimilarDocument(Document* doc);
     protected:
     private:
         mongo::DBClientConnection m_Conn;
