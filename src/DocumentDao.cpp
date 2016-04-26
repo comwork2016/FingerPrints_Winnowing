@@ -4,7 +4,7 @@ DocumentDao::DocumentDao()
 {
     //ctor
     this->m_Host = "localhost:27017";
-    this->m_DBName = "FP.docs";
+    this->m_DBName = "FP.docspara";
     this->m_Conn.connect(this->m_Host);
 }
 
@@ -18,7 +18,6 @@ int DocumentDao::Insert(const Document* doc)
     const char* pch_Contents= doc->GetstrContents().c_str();
     b.append("filelength",static_cast<int>(StringUtil::ConvertCharArraytoWString(pch_Contents).length()));
     b.appendNumber("docsimhash",static_cast<long long>(doc->GetlSimHash()));
-    //b.appendNumber("paragraphsize",static_cast<int>(doc->GetvecParagraph().size()));
     std::vector<Paragraph> vec_Paragraph = doc->GetvecParagraph();
     mongo::BSONObjBuilder bb_allparas; // 所有段落作为一个BSON对象存到数据库中
     // 遍历段落信息
@@ -50,12 +49,6 @@ int DocumentDao::Insert(const Document* doc)
         ss_ParaIndex << para.index;
         std::string str_ParaIndex = ss_ParaIndex.str();
         bb_allparas.append(str_ParaIndex,bb_para.obj());
-        /*
-        std::stringstream ss_ParaSimHash;
-        ss_ParaSimHash << para.hashValue;
-        std::string str_ParaSimHash = ss_ParaSimHash.str();
-        bb_allparas.append(str_ParaSimHash,bb_para.obj());
-        */
     }
     b.append("paragraph",bb_allparas.obj());
     this->m_Conn.insert(this->m_DBName,b.obj());
@@ -97,7 +90,7 @@ std::string DocumentDao::QuerySIMSimilarity(const Document* doc)
 }
 
 //对相同内容进行扩展匹配
-void ExtendMatch(const Document* doc, const Document *docDB,std::vector<TextRange>& vec_SearchDocSimilarTextRange,std::vector<TextRange>& vec_DBDocSimilarTextRange,int& n_SameContentsBytes)
+void DocumentDao::ExtendMatch(const Document* doc, const Document *docDB,std::vector<TextRange>& vec_SearchDocSimilarTextRange,std::vector<TextRange>& vec_DBDocSimilarTextRange,int& n_SameContentsBytes)
 {
     //待比对的文档中相同指纹范围 和 数据库的文档中相同指纹范围；
     std::vector<TextRange> vec_ExtendedSearchDocSimilarTextRange;
@@ -261,17 +254,6 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
             {
                 continue;
             }
-/*            if(!bson_ParaSimHash.isEmpty())// 数据库中查找到相同的段落，则加入到相同指纹向量中
-             {
-                TextRange textrange_SearchDoc;
-                TextRange textrange_DBDoc;
-                textrange_SearchDoc.offset_begin = para_SearchDoc.offset_begin;
-                textrange_SearchDoc.offset_end = para_SearchDoc.offset_end;
-                textrange_DBDoc.offset_begin = bson_ParaSimHash.getIntField("parabegin");
-                textrange_DBDoc.offset_end = bson_ParaSimHash.getIntField("paraend");
-                vec_SearchDocSimilarTextRange.push_back(textrange_SearchDoc);
-                vec_DBDocSimilarTextRange.push_back(textrange_DBDoc);
-            }*/
             else
             {
                 //数据库文档中不存在相同的段落，则继续在所有段落中查找相同的KGram句子
@@ -304,39 +286,12 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                 }
             }
         }
-        /*输出相同指纹的范围
-        for(int j=0; j<vec_SearchDocSimilarTextRange.size(); j++)
-        {
-            std::wcout<<L"==============================="<<std::endl;
-            TextRange textrange_SearchDoc = vec_SearchDocSimilarTextRange[j]; //待比对文档中相同的hash
-            TextRange textrange_DBDoc = vec_DBDocSimilarTextRange[j]; //数据库中文档的相同的hash;
-            int n_OriginLength = textrange_SearchDoc.offset_end - textrange_SearchDoc.offset_begin;
-            int n_DBLength = textrange_DBDoc.offset_end - textrange_DBDoc.offset_begin;
-            std::wcout<<L"["<<textrange_SearchDoc.offset_begin<<","<<textrange_SearchDoc.offset_end<<L","<<n_OriginLength<<L"]"<<std::endl;
-            std::wcout<<L"["<<textrange_DBDoc.offset_begin<<","<<textrange_DBDoc.offset_end<<L","<<n_DBLength<<L"]"<<std::endl;
-        }
-        std::wcout<<std::endl<<std::endl<<std::endl;*/
-
         //如果有匹配的指纹，则进行扩展匹配
         if(!vec_SearchDocSimilarTextRange.empty())
         {
             Document* docDB = new Document(str_DocPathInDB);
             ExtendMatch(doc,docDB,vec_SearchDocSimilarTextRange,vec_DBDocSimilarTextRange,n_SameContentsBytes);
         }
-
-        /*输出相同指纹的范围
-        for(int j=0; j<vec_SearchDocSimilarTextRange.size(); j++)
-        {
-            std::wcout<<L"*******************************"<<std::endl;
-            TextRange textrange_SearchDoc = vec_SearchDocSimilarTextRange[j]; //待比对文档中相同的hash
-            TextRange textrange_DBDoc = vec_DBDocSimilarTextRange[j]; //数据库中文档的相同的hash;
-            int n_OriginLength = textrange_SearchDoc.offset_end - textrange_SearchDoc.offset_begin;
-            int n_DBLength = textrange_DBDoc.offset_end - textrange_DBDoc.offset_begin;
-            std::wcout<<L"["<<textrange_SearchDoc.offset_begin<<","<<textrange_SearchDoc.offset_end<<L","<<n_OriginLength<<L"]"<<std::endl;
-            std::wcout<<L"["<<textrange_DBDoc.offset_begin<<","<<textrange_DBDoc.offset_end<<L","<<n_DBLength<<L"]"<<std::endl;
-        }
-        std::wcout<<std::endl<<std::endl<<std::endl;*/
-
         //计算相似度
         if(n_SameContentsBytes!=0)
         {

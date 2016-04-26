@@ -17,6 +17,8 @@ class HashUtil
         static SIMHASH_TYPE CalcParaSimHash(const std::vector<SplitedHits>& vec_SimHash);
         static SIMHASH_TYPE CalcDocSimHash(const std::vector<Paragraph>& vec_SimHash);
     protected:
+        template <typename T>
+        static SIMHASH_TYPE CalcSimHash(const std::vector<T>& vec_SimHash);
     private:
 };
 

@@ -16,6 +16,7 @@ class DocumentDao
         std::string QuerySIMSimilarity(const Document* doc);
         std::vector<FingerPrintsSimilarDocument> GetFingerPrintsSimilarDocument(Document* doc);
     protected:
+        void ExtendMatch(const Document* doc, const Document *docDB,std::vector<TextRange>& vec_SearchDocSimilarTextRange,std::vector<TextRange>& vec_DBDocSimilarTextRange,int& n_SameContentsBytes);
     private:
         mongo::DBClientConnection m_Conn;
         std::string m_Host;

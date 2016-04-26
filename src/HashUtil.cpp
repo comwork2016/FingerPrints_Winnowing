@@ -55,7 +55,7 @@ SIMHASH_TYPE HashUtil::CalcWstringHash(const std::wstring& str)
 
 //计算文档分词后的simhash值
 template <typename T>
-SIMHASH_TYPE CalcSimHash(const std::vector<T>& vec_SimHash)
+SIMHASH_TYPE HashUtil::CalcSimHash(const std::vector<T>& vec_SimHash)
 {
     //初始化表示simhash每一位的权重数组
     short v[SIMHASHBITS];
@@ -93,11 +93,6 @@ SIMHASH_TYPE CalcSimHash(const std::vector<T>& vec_SimHash)
             l_SimHash += n_IBit;
         }
     }
-    /*二进制输出
-    std::cout<<std::endl;
-    std::bitset<64> bs(l_SimHash);
-    std::cout<<bs<<std::endl;
-    */
     return l_SimHash;
 }
 

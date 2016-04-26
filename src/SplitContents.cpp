@@ -38,7 +38,6 @@ std::vector<SplitedHits> SplitContents::SplitContentsToWords(const std::string& 
             hashValue
         };
         vec_SplitedHits.push_back(sh_hits);
-//        std::wcout<<sh_hits.words<<"["<<sh_hits.offset<<","<<sh_hits.length<<","<<sh_hits.hashValue<<"]"<<std::endl;
 
     }
     return vec_SplitedHits;

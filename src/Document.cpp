@@ -91,8 +91,6 @@ void Document::Dispaly()
         std::string str_para = this->m_strContents.substr(para.offset_begin,para.offset_end-para.offset_begin);
         //段落号，开始偏移值，结束偏移值，simhash值
         std::wcout<<L"["<<para.index<<":"<<para.offset_begin<<","<<para.offset_end<<","<<para.hashValue<<"]"<<std::endl;
-        // 段落文本
-        // std::wcout<<StringUtil::ConvertCharArraytoWString(str_para)<<std::endl;
         //段落分词
         for(int j=0; j<para.vec_splitedHits.size(); j++)
         {
