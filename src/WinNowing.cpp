@@ -39,7 +39,7 @@ std::vector<KGramHash> CalcRabinHash(const std::vector<SplitedHits>& vec_Splited
         {
             // 计算偏移信息并保存kgram的信息
             kgram_Now.offset_begin = kgram_Now.vec_splitedHits[0].offset;
-            kgram_Now.offset_end = kgram_Now.vec_splitedHits[KGRAM-1].offset + kgram_Now.vec_splitedHits[KGRAM-1].length+1;
+            kgram_Now.offset_end = kgram_Now.vec_splitedHits[KGRAM-1].offset + kgram_Now.vec_splitedHits[KGRAM-1].length;
             vec_KGramHash.push_back(kgram_Now);
             // 更新kgram_now and kgram_now，即删除kgram_now中的第一个元素，添加下一个元素，同时，第一个分词索引下移
             std::vector<SplitedHits>::iterator it_first = kgram_Now.vec_splitedHits.begin();
@@ -63,7 +63,7 @@ std::vector<KGramHash> CalcRabinHash(const std::vector<SplitedHits>& vec_Splited
     if(n_kcount<=KGRAM)//分词个数小于K值，则作为一个KGRAM
     {
         kgram_Now.offset_begin = kgram_Now.vec_splitedHits[0].offset;
-        kgram_Now.offset_end = kgram_Now.vec_splitedHits[n_kcount-1].offset + kgram_Now.vec_splitedHits[n_kcount-1].length+1;
+        kgram_Now.offset_end = kgram_Now.vec_splitedHits[n_kcount-1].offset + kgram_Now.vec_splitedHits[n_kcount-1].length;
         //SplitedHits hits  = kgram_Now.vec_splitedHits[n_kcount-1];
         //std::wcout<<hits.words<<":["<<hits.offset<<";"<<hits.length<<"]"<<std::endl;
     }

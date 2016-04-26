@@ -262,7 +262,7 @@ std::vector<FingerPrintsSimilarDocument> DocumentDao::GetFingerPrintsSimilarDocu
                 continue;
             }
 /*            if(!bson_ParaSimHash.isEmpty())// 数据库中查找到相同的段落，则加入到相同指纹向量中
-            {
+             {
                 TextRange textrange_SearchDoc;
                 TextRange textrange_DBDoc;
                 textrange_SearchDoc.offset_begin = para_SearchDoc.offset_begin;
